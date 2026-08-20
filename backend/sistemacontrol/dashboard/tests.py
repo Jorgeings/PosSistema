@@ -1,0 +1,74 @@
+from django.test import TestCase
+from django.contrib.auth.models import User
+from decimal import Decimal
+from django.utils import timezone
+
+from dashboard.models import Empleado, Rol, Arqueo, Venta, Gasto, Cliente, Producto, Proveedor, Categoria, MedioPago, Empresa
+from dashboard.services.arqueo_service import ArqueoService
+
+class CerrarArqueoServiceTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='cajero', password='1234')
+        self.empresa = Empresa.objects.create(nombre='Empresa Test', nit='123')
+        self.rol = Rol.objects.create(nombre='Cajero', empresa=self.empresa)
+        self.empleado = Empleado.objects.create(user=self.user, rol=self.rol, empresa=self.empresa)
+
+        self.proveedor = Proveedor.objects.create(nombre="ProveedorX", nit="999", direccion="Calle 123", telefono="321", empresa=self.empresa)
+        self.categoria = Categoria.objects.create(nombre="Granos", empresa=self.empresa)
+        self.producto = Producto.objects.create(nombre="Frijoles", descripcion="Negros", precio=10000, stock=50, categoria=self.categoria, proveedor=self.proveedor, empresa=self.empresa)
+        self.mediopago = MedioPago.objects.create(nombre="Efectivo", empresa=self.empresa)
+        self.cliente = Cliente.objects.create(nombre="ClienteX", identificacion="222", telefono="000", direccion="Calle", empresa=self.empresa)
+
+        self.arqueo = Arqueo.objects.create(
+            empresa=self.empresa,
+            empleado=self.empleado,
+            fecha_inicio=timezone.now(),
+            monto_inicial=Decimal("100000.00")
+        )
+
+        Venta.objects.create(
+            empresa=self.empresa,
+            empleado=self.empleado,
+            arqueo=self.arqueo,
+            cliente=self.cliente,
+            total=Decimal("30000.00"),
+            medio_pago=self.mediopago
+        )
+
+        Gasto.objects.create(
+            empresa=self.empresa,
+            empleado=self.empleado,
+            proveedor=self.proveedor,
+            concepto="Gasto prueba",
+            monto=Decimal("7000.00"),
+            arqueo=self.arqueo
+        )
+
+    def test_cerrar_arqueo_calculos_correctos(self):
+        #
+        monto_final_usuario = Decimal("122000.00")
+
+        arqueo_cerrado = ArqueoService.cerrar_arqueo(self.arqueo.id, monto_final_usuario, self.empresa)
+
+        # Valores esperados
+        total_ventas = Decimal("30000.00")
+        total_gastos = Decimal("7000.00")
+        calculado_por_sistema = self.arqueo.monto_inicial + total_ventas - total_gastos 
+        diferencia_esperada = monto_final_usuario - calculado_por_sistema
+
+        self.assertIsNotNone(arqueo_cerrado.fecha_fin)
+        self.assertEqual(arqueo_cerrado.monto_final, monto_final_usuario)
+        self.assertEqual(arqueo_cerrado.diferencia, diferencia_esperada)
+        self.assertEqual(arqueo_cerrado.diferencia, Decimal("-1000.00"))
+
+    def test_crear_arqueo_guarda_datos_basicos(self):
+        nuevo_arqueo = ArqueoService.crear_arqueo({
+            'empresa': self.empresa,
+            'empleado': self.empleado,
+            'monto_inicial': Decimal("50000.00"),
+        })
+
+        self.assertEqual(nuevo_arqueo.empresa, self.empresa)
+        self.assertEqual(nuevo_arqueo.empleado, self.empleado)
+        self.assertEqual(nuevo_arqueo.monto_inicial, Decimal("50000.00"))
+        self.assertIsNotNone(nuevo_arqueo.fecha_inicio)
