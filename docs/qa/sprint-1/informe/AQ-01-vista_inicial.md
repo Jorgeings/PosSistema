@@ -6,7 +6,7 @@ verificar que el site este disponible para iniciar pruebas
 ## validaciones realizadas
 - Página web accesible
 - pantalla de inicio de sesion carga adecuadamente
-- sin errores visibles durante la carga
+- sin errores visibles durante la carga de paginas
 
 ## pass
 ## carga inicial
