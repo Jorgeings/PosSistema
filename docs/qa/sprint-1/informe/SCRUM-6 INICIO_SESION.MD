@@ -25,7 +25,7 @@ PASS
 
 ### Evidencia
 
-![Ver video de inicio de sesión](../evidencias/img/iniciosesion.mkv)
+![Ver video de inicio de sesión](../evidencias/img/iniciosesion.mp4)
 
 ---
 
@@ -82,4 +82,4 @@ FAIL / Hallazgos de seguridad y usabilidad.
 
 ### Evidencia
 
-![Ver video del cambio de contraseña](../evidencias/img/cambioclave.mkv)
+![Ver video del cambio de contraseña](../evidencias/img/cambioclave.mp4)
